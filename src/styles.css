@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@source "./**/*.{ts,tsx}";
+@source "../pages-root/index.html";
 
 @theme {
   --font-sans: "IBM Plex Sans KR", "IBM Plex Sans", system-ui, sans-serif;

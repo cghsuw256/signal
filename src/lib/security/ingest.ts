@@ -63,7 +63,21 @@ type KevItem = {
   notes?: string;
 };
 
+export type Catalog = {
+  fetchedAt: string;
+  from: string;
+  to: string;
+  catalogTotal: number;
+  truncated: boolean;
+  issues: Issue[];
+};
+
 export async function buildBrief(from: string, to: string): Promise<Brief> {
+  const catalog = await buildCatalog(from, to);
+  return assembleBrief(catalog, from, to, Boolean(process.env.XAI_API_KEY));
+}
+
+export async function buildCatalog(from: string, to: string): Promise<Catalog> {
   const [nvd, github, kev] = await Promise.all([
     fetchNvd(from, to),
     fetchGithub(from, to),
@@ -83,6 +97,23 @@ export async function buildBrief(from: string, to: string): Promise<Brief> {
   for (const issue of kev) add(issue);
 
   const all = Array.from(map.values());
+  return {
+    fetchedAt: new Date().toISOString(),
+    from,
+    to,
+    catalogTotal: Math.max(nvd.total, all.length),
+    truncated: nvd.truncated || all.length < nvd.total,
+    issues: all,
+  };
+}
+
+export function assembleBrief(
+  catalog: Catalog,
+  from: string,
+  to: string,
+  aiAvailable = false,
+): Brief {
+  const all = catalog.issues.filter((issue) => inPublishedRange(issue.published, from, to));
   const severity = countSeverity(all);
   const types = topCwes(all, 10);
   const vendors = topVendors(all, 8);
@@ -91,37 +122,23 @@ export async function buildBrief(from: string, to: string): Promise<Brief> {
   const kevAll = ranked.filter((i) => i.kev);
   const kevNew = kevAll.slice(0, 12);
   const issues = ranked.slice(0, FEED_LIMIT);
-
-  const catalogTotal = Math.max(nvd.total, all.length);
+  const fullRange = catalog.from === from && catalog.to === to;
+  const catalogTotal = fullRange ? catalog.catalogTotal : all.length;
+  const truncated = fullRange ? catalog.truncated : false;
   const analyzed = all.length;
-  const topType = types[0];
-  const topVendor = vendors[0];
   const days = Math.max(1, daySpan(from, to));
-
-  const headline = buildHeadline({
-    from,
-    to,
-    days,
-    catalogTotal,
-    analyzed,
-    truncated: nvd.truncated || analyzed < catalogTotal,
-    severity,
-    topType,
-    topVendor,
-    kevCount: kevAll.length,
-  });
 
   return {
     from,
     to,
-    fetchedAt: new Date().toISOString(),
+    fetchedAt: catalog.fetchedAt,
     catalogTotal,
     analyzed,
-    truncated: nvd.truncated || analyzed < catalogTotal,
+    truncated: truncated || analyzed < catalogTotal,
     sources: {
-      nvd: nvd.issues.length,
-      github: github.length,
-      kev: kev.length,
+      nvd: all.filter((i) => i.sources.includes("nvd")).length,
+      github: all.filter((i) => i.sources.includes("github")).length,
+      kev: all.filter((i) => i.sources.includes("kev")).length,
     },
     severity,
     daily,
@@ -130,9 +147,25 @@ export async function buildBrief(from: string, to: string): Promise<Brief> {
     kevNew,
     kevCount: kevAll.length,
     issues,
-    headline,
-    aiAvailable: Boolean(process.env.XAI_API_KEY),
+    headline: buildHeadline({
+      from,
+      to,
+      days,
+      catalogTotal,
+      analyzed,
+      truncated: truncated || analyzed < catalogTotal,
+      severity,
+      topType: types[0],
+      topVendor: vendors[0],
+      kevCount: kevAll.length,
+    }),
+    aiAvailable,
   };
+}
+
+export function inPublishedRange(published: string, from: string, to: string): boolean {
+  const day = published.slice(0, 10);
+  return Boolean(day) && day >= from && day <= to;
 }
 
 function daySpan(from: string, to: string): number {
@@ -317,6 +350,9 @@ async function fetchGithub(from: string, to: string): Promise<Issue[]> {
           Accept: "application/vnd.github+json",
           "User-Agent": UA,
           "X-GitHub-Api-Version": "2022-11-28",
+          ...(typeof process !== "undefined" && process.env.GITHUB_TOKEN
+            ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+            : {}),
         },
         signal: AbortSignal.timeout(15000),
       });

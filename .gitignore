@@ -13,3 +13,5 @@ dist
 .output
 .node_modules.lock
 AGENTS.md
+dist-pages
+public/data
