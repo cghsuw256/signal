@@ -6,6 +6,7 @@ import { formatKoDay } from "@/lib/security/dates";
 import { SEVERITY_KO, SOURCE_KO, severityTone } from "@/lib/security/labels";
 import type { Issue, Severity } from "@/lib/security/types";
 import { cn } from "@/lib/utils";
+import { IssueDetail } from "./issue-detail";
 
 const FILTERS: { id: "all" | "kev" | Severity; label: string }[] = [
   { id: "all", label: "전체" },
@@ -25,7 +26,7 @@ export function IssueFeed({ issues }: { issues: Issue[] }) {
       if (filter === "kev" && !issue.kev) return false;
       if (filter !== "all" && filter !== "kev" && issue.severity !== filter) return false;
       if (!query) return true;
-      const hay = `${issue.cve ?? ""} ${issue.title} ${issue.vendors.join(" ")} ${issue.cwes.map((c) => c.id).join(" ")}`.toLowerCase();
+      const hay = `${issue.cve ?? ""} ${issue.title} ${issue.titleEn ?? ""} ${issue.vendors.join(" ")} ${issue.cwes.map((c) => c.id).join(" ")}`.toLowerCase();
       return hay.includes(query);
     });
   }, [issues, filter, q]);
@@ -110,49 +111,5 @@ export function IssueFeed({ issues }: { issues: Issue[] }) {
         {selected ? <IssueDetail issue={selected} /> : null}
       </Sheet>
     </section>
-  );
-}
-
-function IssueDetail({ issue }: { issue: Issue }) {
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap gap-2">
-        <Badge tone={severityTone(issue.severity)}>{SEVERITY_KO[issue.severity]}</Badge>
-        {issue.score !== undefined ? (
-          <Badge>{`CVSS ${issue.score.toFixed(1)}`}</Badge>
-        ) : null}
-        {issue.kev ? <Badge tone="kev">CISA 악용 중</Badge> : null}
-        {issue.ransomware ? <Badge tone="critical">랜섬웨어 캠페인</Badge> : null}
-      </div>
-      <h3 className="font-display text-xl leading-snug text-fg">{issue.title}</h3>
-      <p className="text-sm leading-relaxed text-muted">{issue.summary || "설명이 제공되지 않았습니다."}</p>
-      <Meta label="공개일" value={issue.published ? formatKoDay(issue.published.slice(0, 10)) : "—"} />
-      <Meta
-        label="유형"
-        value={issue.cwes.length ? issue.cwes.map((c) => `${c.nameKo} (${c.id})`).join(", ") : "—"}
-      />
-      <Meta label="벤더" value={issue.vendors.join(", ") || "—"} />
-      <Meta label="제품" value={issue.products.join(", ") || "—"} />
-      <Meta label="출처" value={issue.sources.map((s) => SOURCE_KO[s]).join(" · ")} />
-      {issue.url ? (
-        <a
-          href={issue.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex h-11 items-center justify-center rounded-md bg-accent px-4 text-sm font-medium text-accent-fg"
-        >
-          원문 보기
-        </a>
-      ) : null}
-    </div>
-  );
-}
-
-function Meta({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs tracking-wide text-subtle uppercase">{label}</p>
-      <p className="mt-1 text-sm text-fg">{value}</p>
-    </div>
   );
 }

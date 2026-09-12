@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Sheet } from "@/components/ui/sheet";
-import { formatKoDay } from "@/lib/security/dates";
-import { SEVERITY_KO, SOURCE_KO, severityTone } from "@/lib/security/labels";
+import { SEVERITY_KO, severityTone } from "@/lib/security/labels";
 import type { Brief, Issue } from "@/lib/security/types";
+import { IssueDetail } from "./issue-detail";
 
 export function MorningWatch({ brief }: { brief: Brief }) {
   const [selected, setSelected] = useState<Issue | null>(null);
@@ -53,51 +53,9 @@ export function MorningWatch({ brief }: { brief: Brief }) {
         }}
         title={selected?.cve ?? selected?.id ?? "이슈"}
       >
-        {selected ? <WatchDetail issue={selected} /> : null}
+        {selected ? <IssueDetail issue={selected} /> : null}
       </Sheet>
     </Card>
   );
 }
 
-function WatchDetail({ issue }: { issue: Issue }) {
-  return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-wrap gap-2">
-        <Badge tone={severityTone(issue.severity)}>{SEVERITY_KO[issue.severity]}</Badge>
-        {issue.score !== undefined ? <Badge>{`CVSS ${issue.score.toFixed(1)}`}</Badge> : null}
-        {issue.kev ? <Badge tone="kev">CISA 악용 중</Badge> : null}
-        {issue.ransomware ? <Badge tone="critical">랜섬웨어 캠페인</Badge> : null}
-      </div>
-      <h3 className="font-display text-xl leading-snug text-fg">{issue.title}</h3>
-      <p className="text-sm leading-relaxed text-muted">
-        {issue.summary || "설명이 제공되지 않았습니다."}
-      </p>
-      <div>
-        <p className="text-xs tracking-wide text-subtle uppercase">공개일</p>
-        <p className="mt-1 text-sm text-fg">
-          {issue.published ? formatKoDay(issue.published.slice(0, 10)) : "—"}
-        </p>
-      </div>
-      <div>
-        <p className="text-xs tracking-wide text-subtle uppercase">유형</p>
-        <p className="mt-1 text-sm text-fg">
-          {issue.cwes.length ? issue.cwes.map((c) => `${c.nameKo} (${c.id})`).join(", ") : "—"}
-        </p>
-      </div>
-      <div>
-        <p className="text-xs tracking-wide text-subtle uppercase">출처</p>
-        <p className="mt-1 text-sm text-fg">{issue.sources.map((s) => SOURCE_KO[s]).join(" · ")}</p>
-      </div>
-      {issue.url ? (
-        <a
-          href={issue.url}
-          target="_blank"
-          rel="noreferrer"
-          className="inline-flex h-11 items-center justify-center rounded-md bg-accent px-4 text-sm font-medium text-accent-fg"
-        >
-          원문 보기
-        </a>
-      ) : null}
-    </div>
-  );
-}

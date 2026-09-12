@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { buildBrief } from "./ingest";
 import type { AiBrief, Brief } from "./types";
 
-const CACHE_VER = "v4";
+const CACHE_VER = "v5";
 const TTL_MS = 10 * 60 * 1000;
 const briefCache = new Map<string, { at: number; data: Brief }>();
 const aiCache = new Map<string, { at: number; text: string }>();

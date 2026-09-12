@@ -13,6 +13,8 @@ export type Issue = {
   ghsa?: string;
   title: string;
   summary: string;
+  titleEn?: string;
+  summaryEn?: string;
   severity: Severity;
   score?: number;
   published: string;

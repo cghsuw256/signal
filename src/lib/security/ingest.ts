@@ -1,4 +1,5 @@
 import { cweLabel } from "./cwe";
+import { localizeIssue } from "./ko";
 import {
   clip,
   compareIssues,
@@ -113,7 +114,9 @@ export function assembleBrief(
   to: string,
   aiAvailable = false,
 ): Brief {
-  const all = catalog.issues.filter((issue) => inPublishedRange(issue.published, from, to));
+  const all = catalog.issues
+    .filter((issue) => inPublishedRange(issue.published, from, to))
+    .map(localizeIssue);
   const severity = countSeverity(all);
   const types = topCwes(all, 10);
   const vendors = topVendors(all, 8);
