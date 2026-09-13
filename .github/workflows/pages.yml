@@ -30,9 +30,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: npm run build:pages
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_VAPID_KEY: ${{ secrets.VITE_FIREBASE_VAPID_KEY }}
       - run: touch dist-pages/.nojekyll
       - uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: dist-pages
           force_orphan: true
+      - name: Send morning FCM
+        env:
+          FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+          FCM_DEVICE_TOKEN: ${{ secrets.FCM_DEVICE_TOKEN }}
+          SIGNAL_PUBLIC_URL: https://cghsuw256.github.io/signal/
+        run: |
+          if [ -z "$FCM_SERVER_KEY" ]; then
+            echo "FCM_SERVER_KEY 없음 — 푸시 생략"
+            exit 0
+          fi
+          npm run fcm:send

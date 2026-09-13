@@ -12,6 +12,7 @@ import { ChartsPanel } from "./charts-panel";
 import { IssueFeed } from "./issue-feed";
 import { MorningWatch } from "./morning-watch";
 import { ApplyButton, PeriodPicker } from "./period-picker";
+import { PushCard } from "./push-card";
 import { StatStrip, StatStripSkeleton } from "./stat-strip";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,12 +40,16 @@ export function Dashboard({
   onApply,
   loadBrief: loadBriefFn = loadBrief,
   loadSummary: loadSummaryFn = loadSummary,
+  onRegisterPush,
+  onTestPush,
 }: {
   from?: string;
   to?: string;
   onApply?: (next: { from: string; to: string }) => void;
   loadBrief?: (from: string, to: string) => Promise<Brief>;
   loadSummary?: (from: string, to: string) => Promise<AiBrief>;
+  onRegisterPush?: (token: string) => Promise<void>;
+  onTestPush?: () => Promise<void>;
 } = {}) {
   const defaults = useMemo(() => rangeForMorning(), []);
   const initial = from && to ? { from, to } : readSearch(defaults);
@@ -96,7 +101,7 @@ export function Dashboard({
 
       <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-6 sm:px-6 sm:py-8">
         <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
-          <aside className="lg:sticky lg:top-6 lg:self-start">
+          <aside className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start">
             <Card className="flex flex-col gap-4 p-4">
               <div>
                 <p className="text-xs tracking-wide text-subtle uppercase">조회 기간</p>
@@ -116,6 +121,7 @@ export function Dashboard({
                 onClick={() => apply(draft)}
               />
             </Card>
+            <PushCard onRegister={onRegisterPush} onTest={onTestPush} />
           </aside>
 
           <div className="flex min-w-0 flex-col gap-6">

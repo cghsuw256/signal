@@ -1,0 +1,18 @@
+{
+  "name": "SIGNAL 시그널",
+  "short_name": "시그널",
+  "description": "전 세계 보안 이슈 모닝 브리핑",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0c0e",
+  "theme_color": "#0b0c0e",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

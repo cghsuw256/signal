@@ -25,6 +25,20 @@ npm run dev
 
 AI 브리핑 버튼은 `XAI_API_KEY`가 있을 때만 활성화됩니다.
 
+## 아침 푸시 (FCM)
+
+`.env`에 Firebase 키만 넣으면 됩니다. 템플릿은 `.env.example`.
+
+1. Firebase 콘솔에서 웹 앱을 만들고 구성 값을 복사합니다.
+2. Cloud Messaging → 웹 푸시 인증서에서 VAPID 키를 복사합니다.
+3. 서버 키(`FCM_SERVER_KEY`)를 넣으면 매일 아침 토픽 `signal-morning`으로 발송합니다.
+4. 아이폰은 홈 화면에 추가한 다음, 앱에서 **아침 알림 받기**를 누릅니다.
+5. GitHub Pages를 쓰면 같은 `VITE_FIREBASE_*`와 `FCM_SERVER_KEY`를 저장소 Secret으로 넣습니다. 한 대만 받을 때는 앱에서 복사한 토큰을 `FCM_DEVICE_TOKEN`에 넣습니다.
+
+```bash
+cp .env.example .env
+```
+
 ## 스택
 
 TanStack Start · React · Tailwind CSS v4 · Recharts

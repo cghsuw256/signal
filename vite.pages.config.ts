@@ -2,6 +2,8 @@ import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 import viteReact from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+// @ts-expect-error JS plugin
+import { fcmSwPlugin } from "./scripts/fcm-sw-plugin.mjs";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 
@@ -10,7 +12,7 @@ export default defineConfig({
   root: fileURLToPath(new URL("./pages-root", import.meta.url)),
   publicDir: fileURLToPath(new URL("./public", import.meta.url)),
   envDir: root,
-  plugins: [tailwindcss(), viteReact()],
+  plugins: [tailwindcss(), viteReact(), fcmSwPlugin()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
