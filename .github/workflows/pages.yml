@@ -46,12 +46,12 @@ jobs:
           force_orphan: true
       - name: Send morning FCM
         env:
-          FCM_SERVER_KEY: ${{ secrets.FCM_SERVER_KEY }}
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           FCM_DEVICE_TOKEN: ${{ secrets.FCM_DEVICE_TOKEN }}
           SIGNAL_PUBLIC_URL: https://cghsuw256.github.io/signal/
         run: |
-          if [ -z "$FCM_SERVER_KEY" ]; then
-            echo "FCM_SERVER_KEY 없음 — 푸시 생략"
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "FIREBASE_SERVICE_ACCOUNT 없음 — 푸시 생략"
             exit 0
           fi
           npm run fcm:send
