@@ -1,9 +1,16 @@
+import { importPKCS8, SignJWT } from "jose";
 import { FCM_TOPIC } from "./config";
 
 export type PushPayload = {
   title: string;
   body: string;
   url?: string;
+};
+
+type ServiceAccount = {
+  project_id: string;
+  client_email: string;
+  private_key: string;
 };
 
 function serverKey(): string | undefined {
@@ -17,28 +24,95 @@ function deviceTokens(): string[] {
     .filter(Boolean);
 }
 
-export function canSendPush(): boolean {
-  return Boolean(serverKey());
-}
-
-export async function subscribeToken(token: string): Promise<void> {
-  const key = serverKey();
-  if (!key) throw new Error("FCM_SERVER_KEY가 없습니다.");
-  const res = await fetch(
-    `https://iid.googleapis.com/iid/v1/${encodeURIComponent(token)}/rel/topics/${FCM_TOPIC}`,
-    { method: "POST", headers: { Authorization: `key=${key}` } },
-  );
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`토픽 구독 실패 (${res.status}) ${text.slice(0, 180)}`);
+function readServiceAccount(): ServiceAccount | null {
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT?.trim();
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as ServiceAccount;
+    if (!parsed.project_id || !parsed.client_email || !parsed.private_key) return null;
+    return parsed;
+  } catch {
+    return null;
   }
 }
 
-export async function sendPush(payload: PushPayload): Promise<{ sent: number }> {
+export function canSendPush(): boolean {
+  return Boolean(readServiceAccount() || serverKey());
+}
+
+async function googleAccessToken(sa: ServiceAccount): Promise<string> {
+  const pem = sa.private_key.replace(/\\n/g, "\n");
+  const key = await importPKCS8(pem, "RS256");
+  const assertion = await new SignJWT({
+    scope: "https://www.googleapis.com/auth/firebase.messaging",
+  })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(sa.client_email)
+    .setSubject(sa.client_email)
+    .setAudience("https://oauth2.googleapis.com/token")
+    .setIssuedAt()
+    .setExpirationTime("1h")
+    .sign(key);
+
+  const res = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion,
+    }),
+  });
+  const json = (await res.json()) as { access_token?: string; error?: string };
+  if (!res.ok || !json.access_token) {
+    throw new Error(`Google 토큰 발급 실패 ${json.error ?? res.status}`);
+  }
+  return json.access_token;
+}
+
+function messageBody(payload: PushPayload, target: { topic?: string; token?: string }) {
+  return {
+    message: {
+      ...target,
+      notification: { title: payload.title, body: payload.body },
+      webpush: {
+        fcm_options: payload.url ? { link: payload.url } : undefined,
+        notification: { icon: "/favicon.svg" },
+      },
+    },
+  };
+}
+
+async function sendV1(payload: PushPayload): Promise<{ sent: number }> {
+  const sa = readServiceAccount();
+  if (!sa) throw new Error("FIREBASE_SERVICE_ACCOUNT가 없습니다.");
+  const access = await googleAccessToken(sa);
+  const url = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
+  const targets: Array<{ topic?: string; token?: string }> = [{ topic: FCM_TOPIC }];
+  for (const token of deviceTokens()) targets.push({ token });
+
+  let sent = 0;
+  for (const target of targets) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${access}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(messageBody(payload, target)),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`FCM 발송 실패 (${res.status}) ${text.slice(0, 180)}`);
+    }
+    sent += 1;
+  }
+  return { sent };
+}
+
+async function sendLegacy(payload: PushPayload): Promise<{ sent: number }> {
   const key = serverKey();
   if (!key) throw new Error("FCM_SERVER_KEY가 없습니다.");
   const targets = [`/topics/${FCM_TOPIC}`, ...deviceTokens()];
-
   let sent = 0;
   for (const to of targets) {
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
@@ -50,11 +124,7 @@ export async function sendPush(payload: PushPayload): Promise<{ sent: number }> 
       body: JSON.stringify({
         to,
         priority: "high",
-        notification: {
-          title: payload.title,
-          body: payload.body,
-          icon: "/favicon.svg",
-        },
+        notification: { title: payload.title, body: payload.body, icon: "/favicon.svg" },
         data: { url: payload.url ?? "" },
       }),
     });
@@ -65,4 +135,42 @@ export async function sendPush(payload: PushPayload): Promise<{ sent: number }> 
     sent += 1;
   }
   return { sent };
+}
+
+export async function subscribeToken(token: string): Promise<void> {
+  const sa = readServiceAccount();
+  if (sa) {
+    const access = await googleAccessToken(sa);
+    const res = await fetch(
+      `https://iid.googleapis.com/iid/v1/${encodeURIComponent(token)}/rel/topics/${FCM_TOPIC}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${access}`,
+          access_token_auth: "true",
+        },
+      },
+    );
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`토픽 구독 실패 (${res.status}) ${text.slice(0, 180)}`);
+    }
+    return;
+  }
+  const key = serverKey();
+  if (!key) throw new Error("FIREBASE_SERVICE_ACCOUNT가 없습니다.");
+  const res = await fetch(
+    `https://iid.googleapis.com/iid/v1/${encodeURIComponent(token)}/rel/topics/${FCM_TOPIC}`,
+    { method: "POST", headers: { Authorization: `key=${key}` } },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`토픽 구독 실패 (${res.status}) ${text.slice(0, 180)}`);
+  }
+}
+
+export async function sendPush(payload: PushPayload): Promise<{ sent: number }> {
+  if (readServiceAccount()) return sendV1(payload);
+  if (serverKey()) return sendLegacy(payload);
+  throw new Error("FIREBASE_SERVICE_ACCOUNT JSON을 넣으세요. Legacy 서버 키는 이 프로젝트에서 사용 중지입니다.");
 }

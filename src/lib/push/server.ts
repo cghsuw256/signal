@@ -13,7 +13,7 @@ export const registerPush = createServerFn({ method: "POST" })
   });
 
 export const sendTestPush = createServerFn({ method: "POST" }).handler(async () => {
-  if (!canSendPush()) return { ok: false as const, error: "FCM_SERVER_KEY가 없습니다." };
+  if (!canSendPush()) return { ok: false as const, error: "FIREBASE_SERVICE_ACCOUNT가 없습니다." };
   await sendPush({
     title: "시그널 테스트",
     body: "아침 푸시가 이 기기로 도착합니다.",
