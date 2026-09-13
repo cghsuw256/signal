@@ -23,7 +23,7 @@ npm run dev
 
 브라우저에서 `http://localhost:8080`을 엽니다.
 
-AI 브리핑은 GitHub Secret `XAI_API_KEY`를 넣으면 매일 배포 때 미리 작성됩니다. 키는 [xAI 콘솔](https://console.x.ai)에서 발급합니다.
+AI 브리핑은 GitHub Secret `OPENAI_API_KEY`를 넣으면 매일 배포 때 미리 작성됩니다. 취약점이 무엇인지, 어디에 언제 나왔는지, 어떻게 막는지 한글로 정리합니다. 키는 [OpenAI API keys](https://platform.openai.com/api-keys)에서 발급합니다.
 
 ## 아침 푸시 (FCM)
 

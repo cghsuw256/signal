@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { loadBrief, loadSummary } from "@/lib/security/api";
 import type { AiBrief, Brief } from "@/lib/security/types";
 import {
@@ -66,6 +66,11 @@ export function Dashboard({
   const aiMutation = useMutation({
     mutationFn: () => loadSummaryFn(appliedFrom, appliedTo),
   });
+
+  useEffect(() => {
+    if (!briefQuery.data?.aiAvailable) return;
+    aiMutation.mutate();
+  }, [appliedFrom, appliedTo, briefQuery.data?.aiAvailable]);
 
   const apply = (next: { from: string; to: string }) => {
     setDraft(next);

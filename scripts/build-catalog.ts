@@ -16,7 +16,7 @@ console.log(
   `[catalog] wrote ${catalog.issues.length} issues (total ${catalog.catalogTotal}) → public/data/catalog.json`,
 );
 
-const apiKey = process.env.XAI_API_KEY?.trim();
+const apiKey = process.env.OPENAI_API_KEY?.trim();
 const briefings: Record<string, string> = {};
 if (apiKey) {
   const ranges = [rangeForMorning(), rangeForPreset(7), rangeForPreset(14), rangeForPreset(30)];
@@ -33,6 +33,6 @@ if (apiKey) {
     }
   }
 } else {
-  console.log("[catalog] XAI_API_KEY 없음 — AI 브리핑 생략");
+  console.log("[catalog] OPENAI_API_KEY 없음 — AI 브리핑 생략");
 }
 writeFileSync(join(outDir, "briefings.json"), JSON.stringify(briefings));

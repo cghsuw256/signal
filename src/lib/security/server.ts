@@ -42,8 +42,8 @@ export const summarizeBrief = createServerFn({ method: "POST" })
     const hit = aiCache.get(key);
     if (hit && Date.now() - hit.at < TTL_MS) return { ok: true, text: hit.text };
 
-    const apiKey = process.env.XAI_API_KEY;
-    if (!apiKey) return { ok: false, error: "AI 브리핑을 사용할 수 없습니다." };
+    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    if (!apiKey) return { ok: false, error: "OPENAI_API_KEY가 없습니다." };
 
     const brief = await getBriefCached(data.from, data.to);
     const result = await generateAiBrief(brief, apiKey);

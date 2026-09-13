@@ -55,14 +55,41 @@ export function BriefCard({
       ) : null}
       {aiText ? (
         <div className="rounded-lg bg-surface-2 p-4">
-          <p className="mb-2 text-xs tracking-wide text-subtle uppercase">편집 브리핑</p>
-          <div className="space-y-3 text-sm leading-relaxed text-fg/90">
-            {aiText.split(/\n\n+/).map((para, i) => (
-              <p key={i}>{para}</p>
-            ))}
-          </div>
+          <p className="mb-2 text-xs tracking-wide text-subtle uppercase">AI 브리핑</p>
+          <BriefingBody text={aiText} />
         </div>
       ) : null}
     </Card>
+  );
+}
+
+function BriefingBody({ text }: { text: string }) {
+  const lines = text.split(/\n/);
+  return (
+    <div className="space-y-2 text-sm leading-relaxed">
+      {lines.map((raw, i) => {
+        const line = raw.trim();
+        if (!line) return null;
+        if (/^##\s+/.test(line)) {
+          return (
+            <h3 key={i} className="pt-2 font-display text-lg text-fg">
+              {line.replace(/^##\s+/, "")}
+            </h3>
+          );
+        }
+        if (/^[-*]\s+/.test(line)) {
+          return (
+            <p key={i} className="pl-3 text-muted">
+              · {line.replace(/^[-*]\s+/, "")}
+            </p>
+          );
+        }
+        return (
+          <p key={i} className="text-fg/90">
+            {line}
+          </p>
+        );
+      })}
+    </div>
   );
 }
