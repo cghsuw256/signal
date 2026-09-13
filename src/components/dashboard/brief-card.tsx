@@ -40,7 +40,7 @@ export function BriefCard({
             className="min-w-36"
           >
             <NotebookPen className="size-3.5" />
-            {aiPending ? "작성 중…" : aiText ? "다시 작성" : "AI 브리핑"}
+            {aiPending ? "작성 중…" : aiText ? "다시 작성" : "심층 분석"}
           </Button>
         ) : null}
       </div>

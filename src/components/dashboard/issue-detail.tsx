@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { formatKoDay } from "@/lib/security/dates";
+import { analyzeIssue } from "@/lib/security/analysis";
 import { SEVERITY_KO, SOURCE_KO, severityTone } from "@/lib/security/labels";
 import type { Issue } from "@/lib/security/types";
 
@@ -10,6 +11,7 @@ export function IssueDetail({ issue }: { issue: Issue }) {
           .filter(Boolean)
           .join("\n\n")
       : "";
+  const analysis = analyzeIssue(issue);
 
   return (
     <div className="flex flex-col gap-5">
@@ -23,6 +25,25 @@ export function IssueDetail({ issue }: { issue: Issue }) {
       <p className="text-sm leading-relaxed text-muted">
         {issue.summary || "설명이 제공되지 않았습니다."}
       </p>
+      <section className="flex flex-col gap-3 rounded-lg bg-surface-2 p-4">
+        <p className="text-xs tracking-wide text-subtle uppercase">분석</p>
+        <p className="text-sm text-fg">
+          <span className="font-medium">{analysis.priority}</span>
+          <span className="text-muted"> · {analysis.priorityWhy}</span>
+        </p>
+        <Meta label="진입점" value={analysis.entry} />
+        <Meta label="전제조건" value={analysis.precond} />
+        <Meta label="영향" value={analysis.impact} />
+        <Meta label="탐지" value={analysis.detect} />
+        <div>
+          <p className="text-xs tracking-wide text-subtle uppercase">대응</p>
+          <ul className="mt-1 flex flex-col gap-1 text-sm text-fg">
+            {analysis.defend.map((step) => (
+              <li key={step}>· {step}</li>
+            ))}
+          </ul>
+        </div>
+      </section>
       {original ? (
         <details className="rounded-lg bg-surface-2 px-3 py-2">
           <summary className="flex min-h-11 cursor-pointer items-center text-xs text-subtle">
