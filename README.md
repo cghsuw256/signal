@@ -23,7 +23,7 @@ npm run dev
 
 브라우저에서 `http://localhost:8080`을 엽니다.
 
-AI 브리핑 버튼은 `XAI_API_KEY`가 있을 때만 활성화됩니다.
+AI 브리핑은 GitHub Secret `XAI_API_KEY`를 넣으면 매일 배포 때 미리 작성됩니다. 키는 [xAI 콘솔](https://console.x.ai)에서 발급합니다.
 
 ## 아침 푸시 (FCM)
 
