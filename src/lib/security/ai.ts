@@ -6,7 +6,26 @@ export function briefingKey(from: string, to: string): string {
 }
 
 export function openaiKey(): string | undefined {
-  return process.env.OPENAI_API_KEY?.trim();
+  let raw = process.env.OPENAI_API_KEY?.trim();
+  if (!raw) return undefined;
+  raw = raw.replace(/^OPENAI_API_KEY\s*=\s*/i, "").trim();
+  raw = raw.replace(/^Bearer\s+/i, "").trim();
+  raw = raw.replace(/^["']|["']$/g, "").trim();
+  return raw || undefined;
+}
+
+function openaiError(status: number, bodyText: string): string {
+  let detail = "";
+  try {
+    const parsed = JSON.parse(bodyText) as { error?: { message?: string; code?: string } };
+    detail = [parsed.error?.code, parsed.error?.message].filter(Boolean).join(" ");
+  } catch {
+    detail = bodyText;
+  }
+  detail = detail.replace(/sk-[a-zA-Z0-9_\-]+/g, "sk-…").replace(/\s+/g, " ").trim().slice(0, 160);
+  return detail
+    ? `브리핑 생성에 실패했습니다 (${status}: ${detail}).`
+    : `브리핑 생성에 실패했습니다 (${status}).`;
 }
 
 export async function generateAiBrief(brief: Brief, apiKey: string): Promise<AiBrief> {
@@ -69,7 +88,8 @@ ${JSON.stringify(payload)}`,
   });
 
   if (!res.ok) {
-    return { ok: false, error: `브리핑 생성에 실패했습니다 (${res.status}).` };
+    const bodyText = await res.text();
+    return { ok: false, error: openaiError(res.status, bodyText) };
   }
   const body = (await res.json()) as {
     choices?: { message?: { content?: string } }[];

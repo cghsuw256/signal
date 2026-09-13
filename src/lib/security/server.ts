@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { generateAiBrief } from "./ai";
+import { generateAiBrief, openaiKey } from "./ai";
 import { buildBrief } from "./ingest";
 import type { AiBrief, Brief } from "./types";
 
@@ -42,7 +42,7 @@ export const summarizeBrief = createServerFn({ method: "POST" })
     const hit = aiCache.get(key);
     if (hit && Date.now() - hit.at < TTL_MS) return { ok: true, text: hit.text };
 
-    const apiKey = process.env.OPENAI_API_KEY?.trim();
+    const apiKey = openaiKey();
     if (!apiKey) return { ok: false, error: "OPENAI_API_KEY가 없습니다." };
 
     const brief = await getBriefCached(data.from, data.to);
