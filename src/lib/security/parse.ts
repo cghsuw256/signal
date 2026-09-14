@@ -78,7 +78,7 @@ export function mergeIssues(into: Issue, extra: Partial<Issue> & { sources?: Sou
     cve: into.cve ?? extra.cve,
     ghsa: into.ghsa ?? extra.ghsa,
     title,
-    summary: clip(summary, 420),
+    summary: clip(summary, 2400),
     severity,
     score,
     published: earlier(into.published, extra.published) ?? into.published,

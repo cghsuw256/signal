@@ -22,9 +22,12 @@ export function IssueDetail({ issue }: { issue: Issue }) {
         {issue.ransomware ? <Badge tone="critical">랜섬웨어 캠페인</Badge> : null}
       </div>
       <h3 className="font-display text-xl leading-snug text-fg">{issue.title}</h3>
-      <p className="text-sm leading-relaxed text-muted">
-        {issue.summary || "설명이 제공되지 않았습니다."}
-      </p>
+      <div>
+        <p className="text-xs tracking-wide text-subtle uppercase">한글 설명</p>
+        <p className="mt-2 text-sm leading-relaxed whitespace-pre-wrap text-fg/90">
+          {issue.summary || "설명이 제공되지 않았습니다."}
+        </p>
+      </div>
       <section className="flex flex-col gap-3 rounded-lg bg-surface-2 p-4">
         <p className="text-xs tracking-wide text-subtle uppercase">분석</p>
         <p className="text-sm text-fg">
@@ -44,7 +47,17 @@ export function IssueDetail({ issue }: { issue: Issue }) {
           </ul>
         </div>
       </section>
-      {original ? (
+      {issue.summaryEn ? (
+        <details className="rounded-lg bg-surface-2 px-3 py-2">
+          <summary className="flex min-h-11 cursor-pointer items-center text-xs text-subtle">
+            영어 원문
+          </summary>
+          <p className="pb-3 text-sm leading-relaxed whitespace-pre-wrap text-muted">
+            {issue.summaryEn}
+            {issue.titleEn && issue.titleEn !== issue.summaryEn ? `\n\n${issue.titleEn}` : ""}
+          </p>
+        </details>
+      ) : original ? (
         <details className="rounded-lg bg-surface-2 px-3 py-2">
           <summary className="flex min-h-11 cursor-pointer items-center text-xs text-subtle">
             영어 원문

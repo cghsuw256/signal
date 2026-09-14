@@ -1,3 +1,4 @@
+import { translateAdvisory } from "./advisory";
 import { clip } from "./parse";
 import type { Issue } from "./types";
 
@@ -184,14 +185,7 @@ export function localizeTitle(text: string, issue: Issue): string {
 
 export function localizeSummary(text: string, issue: Issue): string {
   if (!text.trim()) return "";
-  const cweKo = issue.cwes[0]?.nameKo;
-  const wp = wpTitle(text, cweKo);
-  if (wp) {
-    const via = extractVia(text);
-    const extra = via ? ` 요청의 '${via}' 값을 통해 공격할 수 있습니다.` : "";
-    return `${wp}${extra}`;
-  }
-  return phraseKo(text);
+  return translateAdvisory(text, issue);
 }
 
 export function localizeIssue(issue: Issue): Issue {
@@ -209,17 +203,14 @@ export function localizeIssue(issue: Issue): Issue {
     else if (kind) title = `${kind} 취약점`;
   }
   if (summary && latinHeavy(summary)) {
-    const kind = issue.cwes[0]?.nameKo;
-    if (kind) {
-      summary = `${kind} 취약점입니다. 제품·버전과 공격 경로는 원문을 확인하세요.`;
-    }
+    summary = translateAdvisory(summaryEn, issue);
   }
 
   return {
     ...issue,
     titleEn,
     summaryEn,
-    title: clip(title, 160),
-    summary: clip(summary, 420),
+    title: clip(title, 180),
+    summary: clip(summary, 2400),
   };
 }

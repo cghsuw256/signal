@@ -1,3 +1,4 @@
+import { extractFacts } from "./advisory";
 import type { Issue } from "./types";
 
 export type Priority = "즉시" | "오늘" | "이번 주" | "계획";
@@ -202,22 +203,42 @@ function priorityOf(issue: Issue): { priority: Priority; why: string } {
 }
 
 export function analyzeIssue(issue: Issue): IssueAnalysis {
+  const en = `${issue.summaryEn ?? ""} ${issue.titleEn ?? ""} ${issue.summary}`.trim();
+  const facts = extractFacts(en);
   const book =
     issue.cwes.map((c) => PLAYBOOK[c.id]).find(Boolean) ??
     FALLBACK;
   const { priority, why } = priorityOf(issue);
+  const product = facts.product || issue.products[0] || issue.vendors[0];
+  const via = facts.via;
+  const entry = via
+    ? `'${via}' 값이 검증·이스케이프 없이 저장되거나 출력됩니다.`
+    : book.entry;
+  const precond = facts.who
+    ? `${facts.who}가 해당 기능을 호출할 수 있으면 됩니다.`
+    : precondOf(issue);
+  const impact = facts.action
+    ? `${facts.kind ? `${facts.kind}: ` : ""}${facts.action}.`
+    : book.impact;
   const defend = [...book.defend];
-  if (issue.kev && !defend[0]?.includes("즉시")) {
-    defend.unshift("실제 악용 중이므로 패치 전까지 해당 기능을 닫거나 격리");
+  if (product && facts.version) {
+    defend.unshift(
+      `「${product}」을 ${facts.version}보다 높은 버전으로 올리거나, 패치 전에는 비활성화하세요.`,
+    );
+  } else if (product) {
+    defend.unshift(`「${product}」 벤더 패치를 확인하고 적용하세요.`);
+  }
+  if (issue.kev) {
+    defend.unshift("실제 악용 중이므로 패치 전까지 해당 기능을 닫거나 격리하세요.");
   }
   return {
     priority,
     priorityWhy: why,
-    entry: book.entry,
-    precond: precondOf(issue),
-    impact: book.impact,
+    entry,
+    precond,
+    impact,
     detect: book.detect,
-    defend,
+    defend: Array.from(new Set(defend)).slice(0, 5),
   };
 }
 
@@ -234,7 +255,7 @@ export function analysisPayload(issue: Issue) {
     type: issue.cwes[0]?.nameKo,
     kev: issue.kev,
     ransomware: issue.ransomware,
-    summary: issue.summary.slice(0, 180),
+    summary: issue.summary.slice(0, 500),
     ...a,
   };
 }
