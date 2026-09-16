@@ -69,14 +69,33 @@ async function googleAccessToken(sa: ServiceAccount): Promise<string> {
   return json.access_token;
 }
 
+function publicOrigin(): string {
+  const raw = process.env.SIGNAL_PUBLIC_URL?.trim() || "https://cghsuw256.github.io/signal/";
+  return raw.endsWith("/") ? raw : `${raw}/`;
+}
+
 function messageBody(payload: PushPayload, target: { topic?: string; token?: string }) {
+  const origin = publicOrigin();
+  const link = payload.url || origin;
+  const icon = `${origin}apple-touch-icon.png`;
   return {
     message: {
       ...target,
       notification: { title: payload.title, body: payload.body },
+      data: {
+        url: link,
+        title: payload.title,
+        body: payload.body,
+      },
       webpush: {
-        fcm_options: payload.url ? { link: payload.url } : undefined,
-        notification: { icon: "/favicon.svg" },
+        headers: { Urgency: "high", TTL: "86400" },
+        notification: {
+          title: payload.title,
+          body: payload.body,
+          icon,
+          badge: icon,
+        },
+        fcm_options: { link },
       },
     },
   };
@@ -102,10 +121,13 @@ async function sendV1(payload: PushPayload): Promise<{ sent: number }> {
     });
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(`FCM 발송 실패 (${res.status}) ${text.slice(0, 180)}`);
+      const who = target.token ? "device" : "topic";
+      console.error(`[fcm] ${who} fail ${res.status} ${text.slice(0, 240)}`);
+      continue;
     }
     sent += 1;
   }
+  if (sent === 0) throw new Error("FCM 발송 실패: 수신 대상이 없습니다.");
   return { sent };
 }
 

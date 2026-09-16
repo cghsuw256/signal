@@ -30,12 +30,15 @@ firebase.initializeApp(${json});
 const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   const n = payload.notification || {};
-  const title = n.title || "SIGNAL";
-  const body = n.body || "모닝 리포트가 도착했습니다.";
+  const d = payload.data || {};
+  const title = n.title || d.title || "시그널 모닝 리포트";
+  const body = n.body || d.body || "오늘 아침 보안 이슈를 확인해 주세요.";
+  const url = (payload.fcmOptions && payload.fcmOptions.link) || d.url || "./";
   return self.registration.showNotification(title, {
     body,
-    icon: "favicon.svg",
-    data: { url: (payload.fcmOptions && payload.fcmOptions.link) || (payload.data && payload.data.url) || "./" },
+    icon: "apple-touch-icon.png",
+    badge: "apple-touch-icon.png",
+    data: { url },
   });
 });
 self.addEventListener("notificationclick", (event) => {
