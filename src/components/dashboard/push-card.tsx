@@ -69,7 +69,7 @@ export function PushCard({
           {!ready
             ? ".env에 Firebase 키를 넣으면 켜집니다."
             : token
-              ? "이 기기로 매일 아침 브리핑을 보냅니다."
+              ? "알림이 안 오면 끄기 후 다시 받고, 토큰을 GitHub Secret FCM_DEVICE_TOKEN에 넣으세요."
               : "키만 있으면 알림 허용 한 번으로 켜집니다."}
         </p>
       </div>
