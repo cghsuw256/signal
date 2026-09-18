@@ -33,4 +33,8 @@ jobs:
             echo "FIREBASE_SERVICE_ACCOUNT 없음 — 푸시 생략"
             exit 0
           fi
+          if [ -z "$FCM_DEVICE_TOKEN" ]; then
+            echo "FCM_DEVICE_TOKEN 없음 — 푸시 생략"
+            exit 0
+          fi
           npm run fcm:send

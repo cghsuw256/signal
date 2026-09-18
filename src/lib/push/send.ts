@@ -18,10 +18,12 @@ function serverKey(): string | undefined {
 }
 
 function deviceTokens(): string[] {
-  return (process.env.FCM_DEVICE_TOKEN ?? "")
-    .split(/[,\s]+/)
-    .map((t) => t.trim())
-    .filter(Boolean);
+  return [...new Set(
+    (process.env.FCM_DEVICE_TOKEN ?? "")
+      .split(/[,\s]+/)
+      .map((t) => t.trim())
+      .filter(Boolean),
+  )];
 }
 
 function readServiceAccount(): ServiceAccount | null {
@@ -106,23 +108,24 @@ async function sendV1(payload: PushPayload): Promise<{ sent: number }> {
   if (!sa) throw new Error("FIREBASE_SERVICE_ACCOUNT가 없습니다.");
   const access = await googleAccessToken(sa);
   const url = `https://fcm.googleapis.com/v1/projects/${sa.project_id}/messages:send`;
-  const targets: Array<{ topic?: string; token?: string }> = [{ topic: FCM_TOPIC }];
-  for (const token of deviceTokens()) targets.push({ token });
+  const tokens = deviceTokens();
+  if (tokens.length === 0) {
+    throw new Error("FCM_DEVICE_TOKEN이 없습니다. 앱에서 알림을 켠 뒤 시크릿에 넣으세요.");
+  }
 
   let sent = 0;
-  for (const target of targets) {
+  for (const token of tokens) {
     const res = await fetch(url, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${access}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(messageBody(payload, target)),
+      body: JSON.stringify(messageBody(payload, { token })),
     });
     if (!res.ok) {
       const text = await res.text();
-      const who = target.token ? "device" : "topic";
-      console.error(`[fcm] ${who} fail ${res.status} ${text.slice(0, 240)}`);
+      console.error(`[fcm] device fail ${res.status} ${text.slice(0, 240)}`);
       continue;
     }
     sent += 1;
@@ -134,9 +137,12 @@ async function sendV1(payload: PushPayload): Promise<{ sent: number }> {
 async function sendLegacy(payload: PushPayload): Promise<{ sent: number }> {
   const key = serverKey();
   if (!key) throw new Error("FCM_SERVER_KEY가 없습니다.");
-  const targets = [`/topics/${FCM_TOPIC}`, ...deviceTokens()];
+  const tokens = deviceTokens();
+  if (tokens.length === 0) {
+    throw new Error("FCM_DEVICE_TOKEN이 없습니다. 앱에서 알림을 켠 뒤 시크릿에 넣으세요.");
+  }
   let sent = 0;
-  for (const to of targets) {
+  for (const to of tokens) {
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
       method: "POST",
       headers: {
